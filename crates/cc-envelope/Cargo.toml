@@ -1,0 +1,27 @@
+[package]
+name = "cc-envelope"
+description = "Encrypted envelope for remote session state: HPKE Auth mode between per-machine X25519 key pairs, with the KV key as associated data"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+cc-core.workspace = true
+base64.workspace = true
+getrandom.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2 = "0.10"
+thiserror.workspace = true
+zeroize.workspace = true
+hpke = { version = "0.14.1", default-features = false, features = ["alloc", "x25519", "chacha"] }
+rand_core = { version = "0.10", default-features = false }
+
+[dev-dependencies]
+tempfile.workspace = true
+# Checks the derived public keys against X25519 itself; already in the lock
+# through hpke.
+x25519-dalek = { version = "3.0.0", default-features = false }

@@ -1,0 +1,57 @@
+# cc-usage publisher (@VERSION@, alias @ALIAS@): sends this machine's Claude
+# Code sessions, encrypted, to the cc-sessions NATS bucket for the cc-usage
+# widget. Installed by `make install` from cc-publish.service.in, which fills
+# in the placeholders (a name between at signs). Edit the template, not this file.
+#
+# With the default PREFIX the paths below are %h/.local/share/cc-usage/...
+# They are written out in full so a custom PREFIX or XDG_DATA_HOME works too.
+
+[Unit]
+Description=cc-usage publisher (Claude Code sessions to NATS, alias @ALIAS@)
+# cc-publish reconnects with backoff by itself; keep restarting if it exits
+# anyway (no network at login, expired credentials being replaced).
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart="@PREFIX@/bin/cc-publish" run --config "@PREFIX@/publish.json"
+# Same data dir as the hooks (spool, live files), whatever this manager's
+# environment says about XDG_DATA_HOME.
+Environment="CC_USAGE_DATA_DIR=@DATA_DIR@"
+# Claude Code's folder when it is not ~/.claude (make install CLAUDE_DIR=...),
+# for `claude agents` and the session files cc-publish reads.
+@CLAUDE_ENV@
+# User services get a minimal PATH; cc-publish runs `claude agents --json`.
+Environment="PATH=@SVC_PATH@"
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=15
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cc-publish
+
+# Hardening that needs no user namespaces, so it works in every user manager
+# (including Ubuntu 24.04, which restricts unprivileged user namespaces).
+UMask=0077
+NoNewPrivileges=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+# Seccomp filters: no namespaces needed, and NoNewPrivileges=yes lets a user
+# manager install them. Native system calls only, so the 32-bit compat ABI
+# cannot be used to get around the other filters.
+SystemCallArchitectures=native
+# NATS (TCP, TLS, WebSocket) needs AF_INET and AF_INET6, `claude agents` and
+# local IPC need AF_UNIX; other families (netlink, packet, ...) are refused.
+# If `claude agents` fails under the service only, try adding AF_NETLINK.
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+# Not used on purpose: ProtectSystem=strict, ProtectHome and PrivateTmp need
+# mount namespaces, which user services only get through unprivileged user
+# namespaces; where those are blocked the unit fails with 226/NAMESPACE. They
+# would also have to leave ~/.claude, ~/.claude.json and the data dir
+# writable for `claude agents` and the spool, so they would protect little.
+# MemoryDenyWriteExecute would break the claude CLI's JIT.
+
+[Install]
+WantedBy=default.target

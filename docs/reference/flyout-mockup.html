@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Flyout mockup reference</title>
+<!-- Reference for the tray flyout: the ".flyout" block of the "The panel"
+     section of the design document, copied verbatim
+     (markup and CSS rules), with the document's light tokens and its base
+     body rules. The fonts point at the copies bundled with the app instead
+     of Google Fonts. Rendered in the app's own WebView2 window with
+     `cc-usage --reference docs/reference/flyout-mockup.html` (436 px window, 8 px cushion like the
+     app window). -->
+<style>
+@font-face { font-family: "Manrope"; font-style: normal; font-weight: 400 800; font-display: block;
+  src: url("../../app/ui/fonts/manrope-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Manrope"; font-style: normal; font-weight: 400 800; font-display: block;
+  src: url("../../app/ui/fonts/manrope-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 400 600; font-display: block;
+  src: url("../../app/ui/fonts/jetbrains-mono-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 400 600; font-display: block;
+  src: url("../../app/ui/fonts/jetbrains-mono-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+
+/* The design document's light tokens (its dark variants are not used). */
+:root {
+  --bg: #f4f5f9;
+  --fg: #1a1e2b;
+  --muted: #5d6578;
+  --line: #d7dbe6;
+  --panel: #ffffff;
+  --panel-2: #eceef5;
+  --accent: #3454c9;
+  --accent-soft: #e3e8fb;
+  --work: #d27d1f;
+  --need: #d13f3a;
+  --done: #2a9460;
+  --fail: #b9302c;
+  --idle: #8b93a7;
+  --code-bg: #eef0f6;
+  --display: "Manrope", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --body: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
+}
+
+/* The design document's body rule, with the app window's 8 px cushion. */
+body { background: #ffffff; color: var(--fg); font-family: var(--body); font-size: 16px; line-height: 1.55; margin: 0; padding: 8px; }
+
+/* ---------- Panel mockup (verbatim) ---------- */
+.flyout { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.18); overflow: hidden; font-size: 14px; }
+.flyout-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+.flyout-head .icons { display: flex; gap: 10px; font-family: var(--mono); font-size: 12px; }
+.sess { display: grid; grid-template-columns: 4px 1fr auto; gap: 0 12px; padding: 10px 14px 10px 10px; border-bottom: 1px solid var(--line); }
+.sess .bar { border-radius: 2px; background: transparent; }
+.sess .bar.c-blue { background: #4c7cf0; } .sess .bar.c-green { background: #3fb67a; }
+.sess .name { font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sess .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.sess .meter { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+.seg { display: inline-flex; gap: 2px; }
+.seg i { width: 7px; height: 7px; border-radius: 1px; background: var(--line); display: inline-block; }
+.seg i.on { background: var(--muted); }
+.state { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+.state b { display: block; font-weight: 700; }
+.state.need b { color: var(--need); } .state.work b { color: var(--work); } .state.done b { color: var(--done); } .state.idle b { color: var(--idle); } .state.fail b { color: var(--fail); } .state.off b { color: var(--idle); }
+.state span { color: var(--muted); }
+.tag { font-family: var(--mono); font-size: 10.5px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: var(--panel-2); color: var(--muted); letter-spacing: 0.04em; }
+.tag.remote { background: var(--accent-soft); color: var(--accent); }
+.agents { grid-column: 2 / 4; margin-top: 6px; padding-left: 10px; border-left: 1px dashed var(--line); display: grid; gap: 4px; font-size: 13px; }
+.agents div { display: flex; justify-content: space-between; gap: 10px; }
+.agents .dot::before { content: "●"; color: var(--work); font-size: 9px; margin-right: 6px; vertical-align: 1px; }
+.agents .dot.ok::before { color: var(--done); }
+.flyout-foot { padding: 10px 14px; display: grid; gap: 4px; font-family: var(--mono); font-size: 12px; color: var(--muted); background: var(--panel-2); }
+.flyout-foot div { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.flyout-foot strong { color: var(--fg); font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="flyout" role="img" aria-label="Panel mockup with five sessions and plan usage">
+    <div class="flyout-head"><span>5 sessions · 1 needs you</span><span class="icons"><span>⚙</span><span>↻</span><span>⏻</span></span></div>
+
+    <div class="sess">
+      <div class="bar c-blue"></div>
+      <div>
+        <div class="name">Wire Codex sessions into the panel <span class="tag">local</span></div>
+        <div class="sub">Edit release-notes.sh?</div>
+        <div class="meter"><span class="seg"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></span> 42% · claude-opus-5-5 · 2 agents</div>
+      </div>
+      <div class="state need"><b>needs you</b><span>12s</span></div>
+      <div class="agents">
+        <div><span class="dot">explore · Grep · Capabilities</span><span>3s</span></div>
+        <div><span class="dot ok">plan · finished</span><span>1m02s</span></div>
+      </div>
+    </div>
+
+    <div class="sess">
+      <div class="bar"></div>
+      <div>
+        <div class="name">Port the formula to the new tap <span class="tag remote">wsl-ubuntu</span></div>
+        <div class="sub">Bash</div>
+        <div class="meter"><span class="seg"><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i></span> 17% · claude-sonnet-5-5</div>
+      </div>
+      <div class="state work"><b>working</b><span>48s ago</span></div>
+    </div>
+
+    <div class="sess">
+      <div class="bar c-green"></div>
+      <div>
+        <div class="name">deploy-nightly <span class="tag remote">lab-01</span></div>
+        <div class="sub">Edit</div>
+        <div class="meter"><span class="seg"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span> 63% · claude-opus-5-5</div>
+      </div>
+      <div class="state work"><b>working</b><span>20s ago</span></div>
+    </div>
+
+    <div class="sess">
+      <div class="bar"></div>
+      <div>
+        <div class="name">Rebuild the release notes script <span class="tag">local</span></div>
+        <div class="sub">Done. The script is in place and the tests pass.</div>
+        <div class="meter"><span class="seg"><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span> 9% · claude-sonnet-5-5</div>
+      </div>
+      <div class="state done"><b>done</b><span>1m ago</span></div>
+    </div>
+
+    <div class="sess">
+      <div class="bar"></div>
+      <div>
+        <div class="name">3f9a1c2e <span class="tag remote">home-ubuntu</span></div>
+        <div class="sub">no heartbeat since 22:41</div>
+        <div class="meter"><span class="seg"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></span> 31%</div>
+      </div>
+      <div class="state off"><b>offline</b><span>4m</span></div>
+    </div>
+
+    <div class="flyout-foot">
+      <div><span>5-hour session</span><strong>39% left · resets in 2h24m</strong></div>
+      <div><span>Weekly</span><strong>66% left · 4d23h</strong></div>
+      <div><span>Remote</span><strong>3 machines · KV connected</strong></div>
+    </div>
+  </div>
+</body>
+</html>

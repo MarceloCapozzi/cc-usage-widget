@@ -1,0 +1,64 @@
+# Secret scanning: `gitleaks dir . --config .gitleaks.toml` (the working
+# tree) or `gitleaks git . --config .gitleaks.toml` (the history). Needs
+# gitleaks 8.30 or later: 8.28 ignores `targetRules` that name default rules,
+# so the fixtures below are reported. `dir` also reads gitignored files
+# (.env, pub/), so run it on a clean checkout or read the report with care.
+#
+# The default rules, one rule of our own for NATS nkey seeds (the secret in
+# every .creds file), and allowlists for the test fixtures that look like
+# secrets. Each allowlist names its rules, its files and the exact fixture
+# strings, so the same pattern anywhere else is still reported. None of them
+# covers key material, and none ever should: no key, seed or certificate is
+# committed, not even for tests, which make theirs at run time (a fresh nkey
+# seed for creds files, an rcgen CA and certificate for the local NATS
+# test's TLS front). CI's Secrets job runs both scans, with --redact.
+
+title = "cc-usage"
+
+[extend]
+useDefault = true
+
+# A NATS nkey seed: "S", the key type (U user, A account, O operator, ...)
+# and 56 base32 characters. .creds files and bundles are gitignored; this
+# catches one pasted into source or docs.
+[[rules]]
+id = "nats-nkey-seed"
+description = "NATS nkey seed"
+regex = '''\bS[UAONCPX][A-Z2-7]{56}\b'''
+
+# Fake tokens the payload redaction tests feed in, to check they come out as
+# [redacted].
+[[allowlists]]
+description = "cc-hook redaction test inputs"
+targetRules = ["aws-access-token", "generic-api-key", "github-pat", "anthropic-api-key", "openai-api-key", "jwt"]
+condition = "AND"
+paths = ['''^crates[/\\]cc-hook[/\\]src[/\\]payload\.rs$''']
+regexes = [
+    '''^AKIAABCDEFGHIJKLMNOP$''',
+    '''^sk-proj-0123456789abcdef0123$''',
+    '''^sk-ant-api03-A{20}$''',
+    '''^ghp_0123456789abcdefABCDEF$''',
+]
+
+# The placeholder seed of the creds files the tests write: not base32 of a
+# key, and too short for one. targetRules is required here: an allowlist
+# without it is global, and a global one skips every file in `paths` whole.
+[[allowlists]]
+description = "SUAFAKE creds placeholders"
+targetRules = ["nats-nkey-seed", "generic-api-key"]
+condition = "AND"
+paths = [
+    '''^app[/\\]src[/\\]publisher\.rs$''',
+    '''^crates[/\\]cc-publish[/\\]src[/\\](check|pipeline|reload)\.rs$''',
+]
+regexTarget = "line"
+regexes = ['''SUAFAKE(FAKE)*''']
+
+# A cipher name in a comment ("a key, XChaCha20-Poly1305 seals them"), which
+# the generic rule reads as key = value.
+[[allowlists]]
+description = "cipher name read as a key"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''^app[/\\]Cargo\.toml$''']
+regexes = ['''^XChaCha20-Poly1305$''']

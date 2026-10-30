@@ -1,0 +1,218 @@
+# Builds, tests and scans for secrets every push to main and every pull
+# request, and checks the advisories weekly. What each job runs, and how to
+# run the same locally, is in docs/development.md#continuous-integration.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  # Weekly, so an advisory published against a locked dependency shows up
+  # without a push. Only the audit job runs on the schedule.
+  schedule:
+    - cron: "17 6 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Third-party actions are pinned by commit, with the release in a comment.
+# Move them on purpose: resolve the new tag with
+# `git ls-remote https://github.com/<owner>/<repo> refs/tags/<tag>`.
+env:
+  # The toolchain clippy, rustfmt and the tests run on, pinned: a floating
+  # stable breaks `clippy -D warnings` whenever new lints ship. Move it on
+  # purpose, together with the fixes the new lints ask for.
+  RUST_TOOLCHAIN: "1.98.1"
+  # The workspace's rust-version (Cargo.toml), checked on its own.
+  RUST_MSRV: "1.89"
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  windows:
+    name: Windows (workspace, UI, bundle scripts)
+    if: github.event_name != 'schedule'
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      # A test that would skip (no Git Bash, no directory links) fails
+      # instead of printing "skipped".
+      CC_TEST_REQUIRE_ALL: "1"
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Rust toolchain
+        run: |
+          rustup toolchain install $env:RUST_TOOLCHAIN --profile minimal --component clippy,rustfmt
+          rustup default $env:RUST_TOOLCHAIN
+          rustup toolchain install $env:RUST_MSRV --profile minimal
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+
+      # tauri-build checks that app\staging\cc-hook.exe exists even for
+      # cargo build and cargo test, so this runs before any other cargo command.
+      - name: Stage cc-hook
+        run: ./tools/stage-cc-hook.ps1
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Build
+        run: cargo build --workspace --all-targets --locked
+
+      - name: Test
+        run: cargo test --workspace --exclude cc-publish --locked
+
+      # cc-publish's tests/local_nats.rs needs a NATS server, which only the
+      # Linux job runs: here it skips, so CC_TEST_REQUIRE_ALL is off for it.
+      - name: Test cc-publish
+        run: cargo test -p cc-publish --locked
+        env:
+          CC_TEST_REQUIRE_ALL: "0"
+          CC_TEST_REQUIRE_SHELL: "1"
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+      - name: Minimum Rust version
+        run: cargo "+$env:RUST_MSRV" check --workspace --all-targets --locked
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+
+      # Quoted: node expands the glob itself (a bare folder fails on Node 22).
+      - name: UI tests
+        run: node --test "app/ui-tests/*.test.js"
+
+      - name: Bundle script tests (PowerShell 7)
+        run: |
+          pwsh -NoProfile -File tools/publisher-bundle-windows/test/Test-BundleScripts.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          pwsh -NoProfile -File tools/publisher-bundle-gen/test/Test-BundleGen.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Bundle script tests (Windows PowerShell 5.1)
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File tools/publisher-bundle-windows/test/Test-BundleScripts.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          powershell -NoProfile -ExecutionPolicy Bypass -File tools/publisher-bundle-gen/test/Test-BundleGen.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+  linux:
+    name: Linux (crates, musl, bundle, local NATS)
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      # tests/local_nats.rs in cc-publish runs against this server.
+      CC_TEST_NATS_URL: nats://127.0.0.1:4222
+      # A test that would skip (no sh, no directory links, no NATS server)
+      # fails instead of printing "skipped".
+      CC_TEST_REQUIRE_ALL: "1"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Rust toolchain
+        run: |
+          rustup toolchain install "$RUST_TOOLCHAIN" --profile minimal --component clippy --target x86_64-unknown-linux-musl
+          rustup default "$RUST_TOOLCHAIN"
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+
+      # A step, not a service container: a service cannot be given the
+      # server's arguments, and -js (JetStream) is needed for the buckets.
+      - name: Start nats-server -js
+        run: |
+          docker run -d --name nats -p 4222:4222 -p 8222:8222 nats:2.11 -js -m 8222
+          for _ in $(seq 1 30); do
+            curl -fsS "http://127.0.0.1:8222/healthz?js-enabled-only=true" && exit 0
+            sleep 1
+          done
+          docker logs nats
+          exit 1
+
+      # cc-usage (the Tauri app) needs webkit2gtk and the staged cc-hook.exe;
+      # it is built and tested by the Windows job.
+      - name: Test
+        run: cargo test --workspace --exclude cc-usage --locked
+
+      - name: Clippy
+        run: cargo clippy --workspace --exclude cc-usage --all-targets --locked -- -D warnings
+
+      - name: Static musl build of cc-hook and cc-publish
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+          cargo build --locked --target x86_64-unknown-linux-musl -p cc-hook -p cc-publish
+
+      - name: Bundle simulation (sh, dash, bash)
+        run: |
+          sh tools/publisher-bundle/test/simulate.sh
+          SIM_SH=dash sh tools/publisher-bundle/test/simulate.sh
+          SIM_SH=bash sh tools/publisher-bundle/test/simulate.sh
+
+      - name: NATS server log
+        if: failure()
+        run: docker logs nats || true
+
+  secrets:
+    name: Secrets (gitleaks)
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # The release binary, pinned with its sha256 from the release's
+      # gitleaks_<version>_checksums.txt (gitleaks-action needs a license for
+      # an organisation's repository). Move both on purpose; .gitleaks.toml
+      # needs 8.30 or later.
+      GITLEAKS_VERSION: "8.30.1"
+      GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+    steps:
+      # The whole history for `gitleaks git`, and no token left in
+      # .git/config for `gitleaks dir` to read.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Into the runner's temp folder, so `gitleaks dir .` does not scan it.
+      - name: Install gitleaks
+        run: |
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL -o "$RUNNER_TEMP/$archive" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/$archive"
+          echo "$GITLEAKS_SHA256  $RUNNER_TEMP/$archive" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/gitleaks"
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP/gitleaks" gitleaks
+          echo "$RUNNER_TEMP/gitleaks" >> "$GITHUB_PATH"
+
+      # A clean checkout holds no gitignored files (.env, creds, pub/), so
+      # whatever `dir` reports is in the repository.
+      - name: gitleaks dir (the files)
+        run: gitleaks dir . --config .gitleaks.toml --redact --exit-code 1 --no-banner
+
+      # Also a secret that a later commit removed again.
+      - name: gitleaks git (the history)
+        run: gitleaks git . --config .gitleaks.toml --redact --exit-code 1 --no-banner
+
+  audit:
+    name: Advisories (cargo audit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: taiki-e/install-action@86f7a0ffb25f40114606501a311ebcfaf882ea32 # v2.88.0
+        with:
+          tool: cargo-audit
+      # .cargo/audit.toml lists the reviewed warnings; a vulnerability, or a
+      # warning not on that list, fails the job.
+      - name: cargo audit
+        run: cargo audit

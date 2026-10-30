@@ -1,0 +1,6 @@
+[
+  {"pid":16808,"cwd":"c:\\Users\\dev\\Projects\\web-dashboard","kind":"interactive","startedAt":1791850492786,"sessionId":"0f3c2a8e-1b7d-4c55-9e0a-6d2f8b4e1a01","name":"web-dashboard-12","status":"idle"},
+  {"pid":5400,"cwd":"c:\\Users\\dev\\Projects\\media-player","kind":"interactive","startedAt":1791850569631,"sessionId":"7a9e4b21-3c6d-4f08-8b1e-2d5c7f9a3b02","name":"media-player-3","status":"waiting","waitingFor":"permission"},
+  {"pid":21728,"cwd":"c:\\Users\\dev\\Projects\\cc-usage-widget","kind":"interactive","startedAt":1791855985658,"sessionId":"c41d8e7f-5a2b-4e93-a6c0-9f1b3d7e5c03","name":"cc-usage-widget-1","status":"busy"},
+  {"pid":30112,"cwd":"c:\\Users\\dev\\Projects\\crypto-lib","kind":"background","startedAt":1791856000000,"sessionId":"e58b2c1d-9f4a-4b67-8d3e-1c6a5f2b7d04","name":"nightly-fix","status":"compacting","id":"bg_01ab","futureField":{"x":1}}
+]

@@ -1,0 +1,68 @@
+/* Design tokens. The light palette is the "The panel" mockup's in the
+ * design document (see docs/reference/flyout-mockup.html);
+ * the dark one is the same document's dark palette. Which applies follows
+ * the Theme setting: data-theme="light" or "dark" on <html>, or no attribute
+ * for System, where the Windows app theme decides through
+ * prefers-color-scheme. */
+
+:root {
+  --fg: #1a1e2b;
+  --muted: #5d6578;
+  --line: #d7dbe6;
+  --panel: #ffffff;
+  --panel-2: #eceef5;
+  --accent: #3454c9;
+  --accent-soft: #e3e8fb;
+  --work: #d27d1f;
+  --need: #d13f3a;
+  --done: #2a9460;
+  --fail: #b9302c;
+  --idle: #8b93a7;
+  --display: "Manrope", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --body: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
+
+  /* App-only additions, not in the mockup: the row under the pointer, the
+   * bars of the usage view, the subagent tag's backgrounds, a pressed
+   * machine tag, text on the accent, the fourth chart series, and the
+   * Activity calendar's levels (GitHub's contribution greens). */
+  --hover: #f5f6fa;
+  --bar-fill: #7d859a;
+  --work-soft: #fbeedd;
+  --done-soft: #dff2e7;
+  --accent-hover: #d3dcf8;
+  --on-accent: #ffffff;
+  --series-4: #7c5cc4;
+  --act-0: #ebedf0;
+  --act-1: #9be9a8;
+  --act-2: #40c463;
+  --act-3: #30a14e;
+  --act-4: #216e39;
+  --shadow: rgba(0, 0, 0, 0.12);
+  color-scheme: light;
+}
+
+/* The dark palette, as one block used twice: for an explicit Dark, and for
+ * System while Windows is dark. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --fg: #e7e9f0; --muted: #9ba3b8; --line: #292e3c; --panel: #181b24; --panel-2: #20242f;
+    --accent: #8ea2ff; --accent-soft: #232a45; --work: #e59a3c; --need: #ef6b64; --done: #4fc083;
+    --fail: #e0554f; --idle: #7a8296;
+    --hover: #1e2230; --bar-fill: #7a8296; --work-soft: #3a2a17; --done-soft: #183223;
+    --accent-hover: #2e3a6e; --on-accent: #11131a; --series-4: #b49cf0;
+    --act-0: #232838; --act-1: #0e4429; --act-2: #006d32; --act-3: #26a641; --act-4: #39d353;
+    --shadow: rgba(0, 0, 0, 0.45);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --fg: #e7e9f0; --muted: #9ba3b8; --line: #292e3c; --panel: #181b24; --panel-2: #20242f;
+  --accent: #8ea2ff; --accent-soft: #232a45; --work: #e59a3c; --need: #ef6b64; --done: #4fc083;
+  --fail: #e0554f; --idle: #7a8296;
+  --hover: #1e2230; --bar-fill: #7a8296; --work-soft: #3a2a17; --done-soft: #183223;
+  --accent-hover: #2e3a6e; --on-accent: #11131a; --series-4: #b49cf0;
+  --act-0: #232838; --act-1: #0e4429; --act-2: #006d32; --act-3: #26a641; --act-4: #39d353;
+  --shadow: rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}

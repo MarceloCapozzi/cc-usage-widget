@@ -1,0 +1,17 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Widget permissions, deliberately minimal: the window only shows, hides, starts a window drag from the panel and talks to the backend over IPC. Resizing and the global shortcut go through Rust commands, so they need no permission here. It has no disk, network or shell access; all of that goes through audited Rust commands.",
+  "windows": [
+    "flyout"
+  ],
+  "permissions": [
+    "core:default",
+    "core:window:allow-hide",
+    "core:window:allow-show",
+    "core:window:allow-set-focus",
+    "core:window:allow-start-dragging",
+    "core:event:allow-listen",
+    "notification:default"
+  ]
+}

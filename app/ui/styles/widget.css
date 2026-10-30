@@ -1,0 +1,1403 @@
+@import url("fonts.css");
+@import url("tokens.css");
+
+/* The flyout is a port of the ".flyout" block of the "The panel" mockup in
+ * the design document. The reference page docs/reference/flyout-mockup.html
+ * carries the same rules; the block marked "verbatim" below is copied from
+ * it unchanged, and everything else only adds what the app needs (scrolling,
+ * buttons, states the mockup does not show, the secondary view). Change the
+ * verbatim block only together with the reference. */
+
+/* The design document's body rule: Manrope 16px with a 1.55 line height,
+ * inherited by the whole panel. The window is transparent so the rounded
+ * corners show; the 8 px padding is the cushion for the CSS shadow (the
+ * window has `shadow: false`, the native one is rectangular). */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  overflow: hidden;
+}
+
+body {
+  box-sizing: border-box;
+  padding: 8px;
+  color: var(--fg);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.55;
+  /* A panel, not a page: no accidental text selection. */
+  user-select: none;
+  cursor: default;
+  display: flex;
+  flex-direction: column;
+  /* The panel fills the window, whatever size it was given: transparent
+   * pixels let clicks through, so a panel shorter than its window would
+   * leave its bottom resize grip over nothing. */
+  justify-content: flex-start;
+}
+
+/* ---------- Panel mockup (verbatim) ---------- */
+.flyout { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 2px 6px -1px rgba(0,0,0,.20), 0 1px 2px rgba(0,0,0,.12); overflow: hidden; font-size: 14px; }
+.flyout-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+.flyout-head .icons { display: flex; gap: 10px; font-family: var(--mono); font-size: 12px; }
+.sess { display: grid; grid-template-columns: 4px 1fr auto; gap: 0 12px; padding: 10px 14px 10px 10px; border-bottom: 1px solid var(--line); }
+.sess .bar { border-radius: 2px; background: transparent; }
+.sess .name { font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sess .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.sess .meter { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+.seg { display: inline-flex; gap: 2px; }
+.seg i { width: 7px; height: 7px; border-radius: 1px; background: var(--line); display: inline-block; }
+.seg i.on { background: var(--muted); }
+.state { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+.state b { display: block; font-weight: 700; }
+.state.need b { color: var(--need); } .state.work b { color: var(--work); } .state.done b { color: var(--done); } .state.idle b { color: var(--idle); } .state.fail b { color: var(--fail); } .state.off b { color: var(--idle); }
+.state span { color: var(--muted); }
+.tag { font-family: var(--mono); font-size: 10.5px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: var(--panel-2); color: var(--muted); letter-spacing: 0.04em; }
+.tag.remote { background: var(--accent-soft); color: var(--accent); }
+.agents { grid-column: 2 / 4; margin-top: 6px; padding-left: 10px; border-left: 1px dashed var(--line); display: grid; gap: 4px; font-size: 13px; }
+.agents div { display: flex; justify-content: space-between; gap: 10px; }
+.agents .dot::before { content: "●"; color: var(--work); font-size: 9px; margin-right: 6px; vertical-align: 1px; }
+.agents .dot.ok::before { color: var(--done); }
+.flyout-foot { padding: 10px 14px; display: grid; gap: 4px; font-family: var(--mono); font-size: 12px; color: var(--muted); background: var(--panel-2); }
+.flyout-foot div { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.flyout-foot strong { color: var(--fg); font-weight: 600; }
+/* ---------- end of the verbatim block ---------- */
+
+/* ── Panel frame: header and footer fixed, the view scrolls ──────────────── */
+
+.flyout {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 100%;
+}
+
+.flyout-head,
+.flyout-foot {
+  flex: none;
+}
+
+/* In a window taller than the content (a size chosen by hand), the room
+ * left over is panel between the list and the footer, which stays at the
+ * bottom. While the height follows the content there is none. */
+.flyout-foot {
+  margin-top: auto;
+}
+
+/* The summary, and in the usage and settings views a back button before it. */
+.flyout-head .head-left {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.flyout-head #btn-back {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin: -5px 0 -5px -8px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.flyout-head #btn-back[hidden] {
+  display: none;
+}
+
+.flyout-head #btn-back:hover {
+  color: var(--fg);
+  background: var(--panel-2);
+}
+
+.flyout-head #btn-back:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.flyout-head #head-summary {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A short message after a failed row click. */
+.flyout-head #head-summary.note {
+  color: var(--need);
+  font-weight: 600;
+}
+
+/* The header glyphs are buttons. The mockup's 12px glyphs read too small
+ * next to the 13px header text and made a hard click target, so they are
+ * 17px in a 26px square (hover tint shows the target). The negative margin
+ * keeps the header as tall as the mockup's. */
+.flyout-head .icons {
+  gap: 2px;
+  margin: -5px -6px -5px 0;
+}
+
+.flyout-head .icons button {
+  width: 26px;
+  height: 26px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font-family: "Segoe UI Symbol", "Segoe UI", var(--mono);
+  font-size: 17px;
+  line-height: 26px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.flyout-head .icons button:hover {
+  color: var(--fg);
+  background: var(--panel-2);
+}
+
+/* Each button holds a stroked SVG in the same 17 px box, centred, so the
+ * four line up; font glyphs (⚙ ↻ ⏻) sat at different heights and sizes. */
+.flyout-head .icons button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flyout-head .icons button svg {
+  display: block;
+}
+
+.flyout-head .icons button[aria-pressed="true"] {
+  color: var(--accent);
+}
+
+.flyout-head .icons button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.flyout-head .icons button.spinning {
+  color: var(--accent);
+}
+
+.view {
+  /* Never grows: the panel is as tall as its content, up to the window,
+   * and past that the view scrolls between the header and the footer. */
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+.view[hidden] {
+  display: none;
+}
+
+/* ── Session rows: what the mockup does not show ─────────────────────────── */
+
+.sess > .main {
+  min-width: 0;
+}
+
+/* The state label and its time take two lines, so the meter line (third)
+ * may run under them: with the subagent tag after the model it needs the
+ * room. `.main` lets its three lines sit in the row's grid directly; the
+ * layout is otherwise the mockup's (bar beside the three lines, state at the
+ * top right, subagents underneath). */
+.sess > .main {
+  display: contents;
+}
+
+.sess > .bar { grid-column: 1; grid-row: 1 / 5; }
+.sess .name { grid-column: 2; grid-row: 1; }
+.sess .sub { grid-column: 2; grid-row: 2; }
+.sess .meter { grid-column: 2 / 4; grid-row: 3; min-width: 0; }
+.sess .host { grid-column: 2 / 4; grid-row: 4; min-width: 0; display: flex; margin-top: 5px; }
+.sess > .state { grid-column: 3; grid-row: 1 / 3; }
+.sess > .agents { grid-row: 5; }
+
+/* A long title is cut with an ellipsis; the row tooltip has it whole. */
+.sess .name {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.sess .name .title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sess .name .tag {
+  flex: none;
+}
+
+/* The machine tag (this machine's name or a remote alias) on its own line
+ * under the meter, so it takes no room from the title or the model; a name
+ * wider than the row is cut with an ellipsis, its tooltip has it whole. */
+.sess .host .tag.machine {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The subagent tag at the end of the meter line, the shape of the machine
+ * tag: amber while any is running, green once all finished. */
+.sess .meter .agents-tag {
+  flex: none;
+  background: var(--work-soft);
+  color: var(--work);
+  white-space: nowrap;
+}
+
+.sess .meter .agents-tag.all-done {
+  background: var(--done-soft);
+  color: var(--done);
+}
+
+/* Long messages wrap, two lines at most. */
+.sess .sub {
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.sess.state-failed .sub {
+  color: var(--fail);
+}
+
+/* Without hooks the row only knows busy/idle: one muted hint line. */
+.sess .meter.hint {
+  font-family: var(--body);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.sess .meter .text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sess.clickable {
+  cursor: pointer;
+}
+
+.sess.clickable:hover {
+  background: var(--hover);
+}
+
+.sess:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Working, but no hook event for a long while: the label dims; the row
+ * tooltip says why. */
+.sess.stalled .state b {
+  opacity: 0.6;
+}
+
+.agents div > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agents div > span:last-child {
+  flex: none;
+}
+
+.agents .more {
+  color: var(--muted);
+}
+
+.sessions-empty {
+  padding: 28px 14px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ── Key notice: publisher keys waiting for consent ──────────────────────── */
+
+/* Above the session list, one compact row per key: the words on the left
+ * (key id and fingerprint in the mono face), Accept and Reject on the
+ * right, wrapping under them when the panel is narrow. */
+.key-notice {
+  border-bottom: 1px solid var(--line);
+  background: var(--accent-soft);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.key-notice[hidden] {
+  display: none;
+}
+
+.key-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 7px 14px;
+}
+
+.key-row + .key-row {
+  border-top: 1px solid var(--line);
+}
+
+.key-text {
+  flex: 1 1 180px;
+  min-width: 0;
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+.key-id {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--accent);
+}
+
+.key-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.key-notice .chip {
+  background: var(--panel);
+}
+
+.key-notice .chip.key-accept {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.key-notice .chip.key-accept:hover:not(:disabled) {
+  color: var(--on-accent);
+  opacity: 0.9;
+}
+
+.key-error {
+  flex-basis: 100%;
+  color: var(--need);
+  font-weight: 600;
+}
+
+.key-error[hidden] {
+  display: none;
+}
+
+.key-more {
+  padding: 0 14px 7px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+
+/* ── Footer: what the mockup does not show ───────────────────────────────── */
+
+.flyout-foot div > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flyout-foot div[data-sev="warning"] .pct {
+  color: var(--work);
+}
+
+.flyout-foot div[data-sev="critical"] .pct {
+  color: var(--need);
+}
+
+/* The limit lines' ten-cell meter (the context meter's cells), coloured by
+ * how much is used: green, amber from 50%, red from 80%. */
+.flyout-foot div:not([data-remote]) strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Fixed widths (the font is monospaced), right-aligned like a table, so the
+ * meters line up whatever the numbers: "100% left" and "4d05h" are the
+ * widest. */
+.flyout-foot .use-meter + .pct {
+  min-width: 9ch;
+  text-align: right;
+}
+
+.flyout-foot .use-meter ~ .reset {
+  min-width: 5ch;
+  text-align: right;
+}
+
+.flyout-foot .use-meter i {
+  width: 6px;
+  height: 6px;
+}
+
+.flyout-foot .use-meter.ok i.on {
+  background: var(--done);
+}
+
+.flyout-foot .use-meter.warn i.on {
+  background: var(--work);
+}
+
+.flyout-foot .use-meter.crit i.on {
+  background: var(--need);
+}
+
+.flyout-foot.stale .use-meter i.on {
+  background: var(--muted);
+}
+
+/* Data from an older refresh, kept on screen while the API cannot answer. */
+.flyout-foot.stale strong {
+  color: var(--muted);
+}
+
+.flyout-foot .foot-note {
+  margin: 0;
+  font-family: var(--body);
+  font-size: 12px;
+  line-height: 1.4;
+  /* Error texts can carry long paths with no spaces. */
+  overflow-wrap: anywhere;
+}
+
+.flyout-foot .foot-note.error {
+  color: var(--need);
+  font-weight: 600;
+}
+
+.flyout-foot .foot-note.stale {
+  color: var(--work);
+  font-weight: 600;
+}
+
+/* ── Usage view (account, history chart, per-project report) and the ⚙
+ *    settings view ────────────────────────────────────────────────────── */
+
+.view-history {
+  padding: 4px 14px 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.section-title {
+  margin: 12px 0 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+/* "ACTIVITY · USAGE HISTORY": the shown chart in the text colour, the
+ * other one muted and clickable. */
+.chart-switch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-switch button {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--idle);
+  cursor: pointer;
+}
+
+.chart-switch button:hover {
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.chart-switch button[aria-selected="true"] {
+  color: var(--fg);
+  cursor: default;
+  text-decoration: none;
+}
+
+.chart-switch button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.chart-switch-sep {
+  color: var(--idle);
+}
+
+/* The globe follows the plan, not the far edge. */
+.account {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+
+/* The email reads first: text colour and bold; the plan after it, muted. */
+.account .account-email {
+  color: var(--fg);
+  font-weight: 700;
+}
+
+.account .account-plan {
+  color: var(--muted);
+}
+
+/* An icon button drawn like the header's glyph buttons (⚙ ↻ ⏻ and the clear
+ * button's wastebasket): the same
+ * 26 px square, muted colour and hover tint. The negative margin keeps the
+ * account line as tall as its text. */
+.icon-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin: -4px -6px -4px 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  color: var(--fg);
+  background: var(--panel-2);
+}
+
+.icon-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.icon-btn svg {
+  display: block;
+}
+
+.account #account-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ranges {
+  display: flex;
+  gap: 4px;
+}
+
+.ranges button {
+  flex: 1;
+  margin: 0;
+  padding: 2px 0;
+  border: 0;
+  border-radius: 4px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.55;
+  cursor: pointer;
+}
+
+.ranges button[aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.ranges button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.chart {
+  position: relative;
+  margin-top: 10px;
+}
+
+svg#svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.axis-text { font-family: var(--mono); font-size: 8.5px; fill: var(--muted); }
+.grid-line { stroke: var(--line); stroke-width: 1; }
+.grid-line.dashed { stroke-dasharray: 3 3; }
+.series { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.series-area { fill-opacity: 0.12; stroke: none; }
+.grid-line.tick { stroke-dasharray: 2 3; opacity: 0.7; }
+.direct-label { font-family: var(--mono); font-size: 8.5px; font-weight: 600; }
+.cursor { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 2; opacity: 0; }
+.hover-dot { opacity: 0; }
+
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -115%);
+  background: var(--panel);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px var(--shadow);
+}
+
+.tooltip .tt-row { display: flex; align-items: center; gap: 6px; }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 6px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.legend span { display: flex; align-items: center; gap: 5px; }
+
+.legend-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  flex: none;
+}
+
+.no-history {
+  width: 100%;
+  padding: 14px 0;
+  color: var(--muted);
+  font-family: var(--body);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.blocks:empty {
+  display: none;
+}
+
+.block + .block,
+.project + .project,
+.row + .project {
+  margin-top: 10px;
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.label {
+  font-weight: 700;
+}
+
+.blocks .pct,
+.cost {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cost {
+  color: var(--muted);
+}
+
+/* Under the bar: the machine the project ran on on the left, "N sessions ·
+ * N tokens" on the right; the name above keeps the whole width. */
+.project-host {
+  display: flex;
+  min-width: 0;
+}
+
+.project-host .tag.machine {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-used {
+  flex: none;
+  align-self: center;
+}
+
+/* With more than one machine a tag is a toggle: a click shows only that
+ * machine's projects, a second click every machine again. */
+button.tag {
+  margin: 0;
+  border: 0;
+  font-family: var(--mono);
+  line-height: inherit;
+  cursor: pointer;
+}
+
+button.tag.host-filter:hover {
+  background: var(--accent-hover);
+}
+
+button.tag.host-filter[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+button.tag:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ── Activity calendar ─────────────────────────────────────────────────── */
+
+.activity-head,
+.activity-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.activity-head {
+  margin-bottom: 8px;
+}
+
+.activity-days {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.activity-wrap {
+  position: relative;
+}
+
+.activity-grid {
+  display: block;
+  overflow: visible;
+}
+
+.activity-foot {
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.activity-scale {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10.5px;
+}
+
+.activity-scale i {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.activity-tip {
+  position: absolute;
+  z-index: 2;
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: var(--fg);
+  color: var(--panel);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* "Last 30 days [devbox ✕]": what the list is narrowed to, and the way back. */
+.projects-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* The light tag colours, so it reads as a removable filter next to the
+ * solid (pressed) tags below. */
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.filter-chip .chip-x {
+  font-size: 9px;
+  opacity: 0.85;
+}
+
+/* Under the projects: what the costs are, quietly. */
+.cost-note {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.cost-note span {
+  display: block;
+}
+
+.project-name {
+  min-width: 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bar-track {
+  position: relative;
+  height: 6px;
+  margin-top: 4px;
+  border-radius: 3px;
+  background: var(--panel-2);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--bar-fill);
+}
+
+/* The context window's compaction mark: a line, not a second colour. */
+.compact-mark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--fg);
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 3px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.notice {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.notice.error {
+  color: var(--need);
+}
+
+.empty {
+  margin: 0;
+  padding: 12px 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* The "Remote" line: its own state, not the usage data's staleness.
+ * "[server] N machines · ● connected": the count in the text colour, the
+ * state with its dot coloured: connected green, connecting amber,
+ * disconnected red; "not configured" muted, without a dot. */
+.flyout-foot div[data-remote] strong,
+.flyout-foot.stale div[data-remote] strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fg);
+}
+
+.flyout-foot div[data-remote] .remote-icon {
+  display: inline-flex;
+  color: var(--muted);
+}
+
+/* Nudged up a pixel: centred on the box, it sat below the digits' middle. */
+.flyout-foot div[data-remote] .remote-icon svg {
+  display: block;
+  position: relative;
+  top: -1px;
+}
+
+.flyout-foot div[data-remote] .remote-sep {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.flyout-foot div[data-remote] .remote-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.flyout-foot div[data-remote] .remote-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.flyout-foot div[data-remote="connected"] .remote-state {
+  color: var(--done);
+}
+
+.flyout-foot div[data-remote="connecting"] .remote-state {
+  color: var(--work);
+}
+
+.flyout-foot div[data-remote="disconnected"] .remote-state {
+  color: var(--need);
+}
+
+.flyout-foot div[data-remote="notConfigured"] .remote-state,
+.flyout-foot div[data-remote="unknown"] .remote-state {
+  color: var(--muted);
+}
+
+/* ── Widget settings (the ⚙ view's last section) ─────────────────────────── */
+
+.setting {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.setting-label {
+  flex: none;
+  margin-right: 4px;
+  font-weight: 700;
+}
+
+.shortcut-field {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.55;
+  cursor: pointer;
+  caret-color: transparent;
+}
+
+/* A typed setting (the machine name): the shortcut field's look, with a
+ * caret and selectable text. */
+.text-field {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.55;
+  user-select: text;
+}
+
+.text-field::placeholder {
+  color: var(--idle);
+}
+
+.text-field:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+/* A label on a line of its own, above its field. */
+.setting-label-block {
+  display: block;
+  margin: 12px 0 6px;
+}
+
+.shortcut-field::placeholder {
+  color: var(--idle);
+}
+
+.shortcut-field:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  background: var(--accent-soft);
+}
+
+.chip {
+  flex: none;
+  margin: 0;
+  padding: 3px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.55;
+  cursor: pointer;
+}
+
+.chip:hover:not(:disabled) {
+  color: var(--fg);
+}
+
+.chip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.chip:focus-visible,
+.setting-check input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.setting-note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--done);
+}
+
+.setting-note.error {
+  color: var(--need);
+  font-weight: 600;
+}
+
+/* The version, the settings view's last line. */
+.setting-about {
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.setting-help {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.setting-check {
+  margin-top: 12px;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.setting-check input {
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+/* A titled group of radio buttons (full-screen hiding). */
+.setting-group {
+  margin: 14px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.setting-group legend {
+  padding: 0;
+  font-weight: 600;
+}
+
+.setting-group .setting-check {
+  margin-top: 6px;
+}
+
+/* A label on the left, a short list of delays on the right. */
+.setting-select {
+  margin-top: 10px;
+  justify-content: space-between;
+}
+
+.setting-select .setting-label {
+  font-weight: 600;
+}
+
+.setting-select select {
+  flex: none;
+  margin: 0;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.55;
+  cursor: pointer;
+}
+
+.setting-select select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Settings → Data: backup and restore. The help line sits right under
+ * the title, the password fields stack under the checkbox, and the
+ * restore summary is a quiet box until Restore or Cancel. */
+.data-help {
+  margin-top: 0;
+}
+
+.data-passwords {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+/* Wraps at narrow widths, so the last button of a row is never cut off. */
+.data-actions {
+  flex-wrap: wrap;
+  row-gap: 6px;
+  margin-top: 10px;
+}
+
+.data-restore {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+}
+
+.data-restore .text-field {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* `display` above would otherwise win over the hidden attribute. */
+.data-passwords[hidden],
+.data-restore .text-field[hidden] {
+  display: none;
+}
+
+.data-summary {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--fg);
+}
+
+/* Settings → Role, Publisher: the readiness list (✓ in the done colour,
+ * ✗ in the needs-you one, each with its file) and this machine's public
+ * key line with its Copy button. */
+.publisher-panel {
+  margin-top: 8px;
+}
+
+.publisher-panel[hidden],
+.publisher-key[hidden],
+#publisher-restart-row[hidden] {
+  display: none;
+}
+
+.publisher-alias {
+  font-family: var(--mono);
+  color: var(--fg);
+}
+
+.publisher-checks {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.publisher-checks li {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  column-gap: 6px;
+}
+
+.publisher-checks .mark {
+  font-weight: 700;
+  color: var(--need);
+}
+
+.publisher-checks li.ok .mark {
+  color: var(--done);
+}
+
+.publisher-checks .what {
+  color: var(--fg);
+}
+
+.publisher-checks .path {
+  grid-column: 2;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.publisher-key {
+  margin-top: 8px;
+}
+
+/* Settings → Remote connection: the servers box is the text field's look,
+ * a line per server; a field an environment variable sets is read-only,
+ * on the quiet background, in the muted colour. */
+.nats-servers {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  resize: vertical;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.nats-field[readonly] {
+  background: var(--panel-2);
+  color: var(--muted);
+}
+
+/* Settings that could not be used and folder overrides that were ignored:
+ * red lines, wrapped anywhere (they carry URLs and paths). */
+.setting-problems .setting-note {
+  overflow-wrap: anywhere;
+}
+
+/* "· 2 hidden" after the header's session count. */
+.flyout-head .hidden-count {
+  color: var(--idle);
+}
+
+/* ── Resize grips ────────────────────────────────────────────────────────── */
+
+/* They sit *inside* the panel's edge, not only over the transparent
+ * cushion. On a window with per-pixel transparency Windows treats fully
+ * transparent areas as if the window were not there: clicks pass through
+ * and nothing placed only there ever receives them. Over the panel, which is
+ * opaque, they work. Thin on the sides so they do not cover the header's
+ * buttons; the corners above the sides, or the most useful point for a
+ * diagonal resize would only answer in one direction. */
+:root {
+  --frame: 8px;
+  --grip: 6px;
+  --grip-corner: 12px;
+}
+
+.grip {
+  position: fixed;
+  z-index: 10;
+}
+
+.grip-n,
+.grip-s {
+  left: var(--frame);
+  right: var(--frame);
+  height: var(--grip);
+  cursor: ns-resize;
+}
+.grip-n { top: var(--frame); }
+.grip-s { bottom: var(--frame); }
+
+.grip-w,
+.grip-e {
+  top: var(--frame);
+  bottom: var(--frame);
+  width: var(--grip);
+  cursor: ew-resize;
+}
+.grip-w { left: var(--frame); }
+.grip-e { right: var(--frame); }
+
+.grip-nw,
+.grip-ne,
+.grip-sw,
+.grip-se {
+  width: var(--grip-corner);
+  height: var(--grip-corner);
+  z-index: 11;
+}
+.grip-nw { top: var(--frame); left: var(--frame); cursor: nwse-resize; }
+.grip-ne { top: var(--frame); right: var(--frame); cursor: nesw-resize; }
+.grip-sw { bottom: var(--frame); left: var(--frame); cursor: nesw-resize; }
+.grip-se { bottom: var(--frame); right: var(--frame); cursor: nwse-resize; }

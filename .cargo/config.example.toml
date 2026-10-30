@@ -1,0 +1,13 @@
+# Copy to .cargo/config.toml (gitignored) and set your own path.
+#
+# Rust's build directory grows to tens of GB. When the repository lives in a
+# synced folder (OneDrive, Dropbox), syncing build artefacts slows every build
+# and uploads junk, so build outside it. Cargo does not expand environment
+# variables here, hence a per-machine copy. Alternatively set
+# CARGO_TARGET_DIR in your environment and skip this file.
+#
+# Scripts find the build folder with `cargo metadata` (tools\make-publisher-
+# bundle.ps1, tools\cross\*.ps1, tools\stage-cc-hook.ps1), never by assuming
+# `target\`.
+[build]
+target-dir = "C:/Users/<you>/AppData/Local/cargo-target/cc-usage"

@@ -1,0 +1,72 @@
+# cc-sessions: the NATS project of the cc-usage widget. Encrypted Claude Code
+# session state, shared between machines through one KV bucket. This is a
+# template: copy it to infra/nats/cc-sessions.yaml (ignored by git, because
+# it lists the real machine aliases of one deployment), set the account, and
+# apply it with toolctl (docs/remote.md#provisioning):
+#
+#   toolctl plan  -f infra/nats/cc-sessions.yaml     read-only diff against the account
+#   toolctl apply -f infra/nats/cc-sessions.yaml --no-creds
+#   toolctl creds cc-sessions.viewer                  -> %LOCALAPPDATA%\cc-usage\nats
+#   toolctl check -f infra/nats/cc-sessions.yaml      end-to-end permission check (2 connections)
+#
+# The repository's own live permission check is
+# `cargo run -p cc-remote --example remote_check` (wss:// and tls://). The
+# project's clients (widget, cc-publish) accept only tls:// and wss:// URLs.
+# They connect to Synadia Cloud and the bucket cc-sessions by default; the
+# widget's settings.json ("nats": {"servers", "bucket"}, or the variables
+# CC_USAGE_NATS_SERVERS and CC_USAGE_NATS_BUCKET) and cc-publish's
+# publish.json ("servers", "bucket") name others. A renamed bucket must be
+# renamed here too.
+#
+# A new machine is added by tools\make-publisher-bundle.ps1 -Alias <alias>,
+# which runs `toolctl add-publisher <alias> -f infra/nats/cc-sessions.yaml`
+# (appends a kv-publisher entry at the end of users, idempotent), then the
+# apply above and `toolctl creds cc-sessions.pub-<alias>`.
+# Never run apply with --prune: users of the project that are not listed
+# here would be deleted.
+project: cc-sessions
+account: <account>
+
+# The bucket's limits are tied to constants in the code; the tests
+# bucket_limits_match_the_code (crates/cc-publish/tests/project_file.rs)
+# and the_bucket_outlives_the_offline_rule (app/src/remote/tests.rs) read
+# this file and fail when they drift apart:
+#   max_value_size  = the largest envelope (cc_envelope::MAX_ENVELOPE_BYTES)
+#   max_age         >= 3 publisher heartbeats (60 s), > the project re-put
+#                     (2 min) plus one heartbeat, and > the viewer's offline
+#                     delay (150 s), so a row turns offline before its key
+#                     expires
+#   history         = 1: only the latest value of a key counts
+buckets:
+  - name: cc-sessions
+    description: Encrypted Claude Code session state, one key per session
+    history: 1
+    max_age: 3m
+    max_bytes: 16MiB
+    max_value_size: 4096
+    storage: file
+    replicas: 1
+
+users:
+  # cc-sessions.viewer: the widget. Reads the whole bucket, cannot write.
+  - role: kv-viewer
+
+  # cc-sessions.pub-test: writes only $KV.cc-sessions.test.>, cannot read.
+  # Used by the live tests; never by a real machine.
+  - role: kv-publisher
+    alias: test
+
+  # cc-sessions.pub-<alias>: one entry per publishing machine, added by
+  # `toolctl add-publisher <alias>`. Writes only $KV.cc-sessions.<alias>.>,
+  # cannot read.
+  - role: kv-publisher
+    alias: devbox
+
+# The probe written by `toolctl check`. The widget's viewer ignores it
+# unopened: toolctl-probe is not a session id (8 hex characters), so the key
+# is logged once as "not a cc-sessions key" and never shown or counted as a
+# value that failed to open. The value is no envelope. It is deleted at the
+# end of the check and would expire after max_age anyway.
+check:
+  probe_key: "{alias}.s.toolctl-probe"
+  probe_value: '{"probe":"toolctl"}'

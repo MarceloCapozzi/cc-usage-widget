@@ -1,0 +1,45 @@
+# cargo audit settings (CI's audit job and a local `cargo audit` read this).
+#
+# Every warning that is not listed below fails the audit, so a new
+# unmaintained, unsound or yanked crate is reviewed instead of scrolling past.
+# Only warnings reach this list, each one reviewed: they all come in through
+# Tauri and none has a fix this workspace can pick. Vulnerabilities are never
+# ignored here: they are fixed by updating Cargo.lock (or the dependency).
+# Drop an entry once `cargo tree -i <crate> --target all` no longer finds the
+# crate.
+
+[advisories]
+ignore = [
+    # proc-macro-error 1.0.4, unmaintained: a build-time proc macro under
+    # glib-macros (gtk-rs 0.18), which tauri, wry and tray-icon use on Linux
+    # only. Gone when Tauri moves to gtk-rs 0.19+.
+    "RUSTSEC-2024-0370",
+    # glib 0.18.5, unsound VariantStrIter: gtk-rs 0.18 under tauri, wry and
+    # tray-icon on Linux only; cc-usage ships for Windows, and no code here
+    # iterates a GVariant. Same fix as above.
+    "RUSTSEC-2024-0429",
+    # unic-char-range 0.9.0, unmaintained: urlpattern 0.3 under tauri-utils
+    # (Tauri's capability URL patterns), used at build time and in the app.
+    "RUSTSEC-2025-0075",
+    # unic-common 0.9.0, unmaintained: the same urlpattern 0.3 chain.
+    "RUSTSEC-2025-0080",
+    # unic-char-property 0.9.0, unmaintained: the same urlpattern 0.3 chain.
+    "RUSTSEC-2025-0081",
+    # unic-ucd-version 0.9.0, unmaintained: the same urlpattern 0.3 chain.
+    "RUSTSEC-2025-0098",
+    # unic-ucd-ident 0.9.0, unmaintained: the same urlpattern 0.3 chain.
+    "RUSTSEC-2025-0100",
+    # zvariant 5.15.0, unmaintained: zbus under notify-rust, which
+    # tauri-plugin-notification uses for D-Bus notifications on Linux only.
+    "RUSTSEC-2026-0370",
+    # zbus_names 4.3.4, unmaintained: the same zbus chain, Linux only.
+    "RUSTSEC-2026-0371",
+    # zvariant_derive 5.15.0, unmaintained: the same zbus chain, Linux only.
+    "RUSTSEC-2026-0372",
+]
+
+[output]
+# Warnings (unmaintained, unsound, yanked) fail like vulnerabilities do,
+# except the reviewed ones above.
+deny = ["unmaintained", "unsound", "yanked"]
+quiet = false

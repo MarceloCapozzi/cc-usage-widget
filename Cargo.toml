@@ -1,0 +1,70 @@
+[workspace]
+resolver = "2"
+members = [
+  "app",
+  "crates/cc-core",
+  "crates/cc-envelope",
+  "crates/cc-focus",
+  "crates/cc-hook",
+  "crates/cc-local",
+  "crates/cc-publish",
+  "crates/cc-remote",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.89"
+license = "MIT"
+repository = "https://github.com/MarceloCapozzi/cc-usage-widget"
+publish = false
+
+# One version for what several members use. A member names its own features
+# (`x = { workspace = true, features = [..] }`); crates only one member uses
+# stay in that member's manifest.
+[workspace.dependencies]
+cc-core = { path = "crates/cc-core" }
+cc-envelope = { path = "crates/cc-envelope" }
+cc-focus = { path = "crates/cc-focus" }
+cc-local = { path = "crates/cc-local" }
+cc-publish = { path = "crates/cc-publish" }
+cc-remote = { path = "crates/cc-remote" }
+
+# ring instead of aws-lc-rs (no NASM/CMake); websockets for wss:// on
+# corporate networks.
+async-nats = { version = "0.50", default-features = false, features = [
+  "ring",
+  "jetstream",
+  "kv",
+  "nkeys",
+  "nuid",
+  "websockets",
+] }
+base64 = "0.22"
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
+getrandom = "0.2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tempfile = "3"
+thiserror = "2"
+tokio = "1.45"
+tracing = "0.1"
+zeroize = "1"
+# The version tauri and the other Windows dependencies of the app build too.
+windows-sys = "0.61"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+# Argon2id at the backup's cost (src/backup.rs in the app) takes well under a
+# second optimised and many times that in a plain debug build; the dev
+# profile optimises just these two crates so a debug app stays usable.
+[profile.dev.package.argon2]
+opt-level = 3
+
+[profile.dev.package.blake2]
+opt-level = 3

@@ -1,0 +1,25 @@
+# Line endings are fixed per file type, whatever core.autocrlf says, so a
+# clone on Linux gets runnable shell scripts and a Makefile with real tabs,
+# and Windows scripts keep CRLF.
+* text=auto
+
+# Run on Linux: LF.
+*.sh              text eol=lf
+Makefile          text eol=lf
+*.service.in      text eol=lf
+tools/publisher-bundle/** text eol=lf
+
+# Run on Windows: CRLF.
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.nsh text eol=crlf
+
+# Binary.
+*.png   binary
+*.ico   binary
+*.woff2 binary
+*.exe   binary
+
+# Generated; diffs are noise.
+Cargo.lock text -diff

@@ -1,0 +1,102 @@
+[package]
+name = "cc-usage"
+description = "Claude Code usage and session widget for the Windows 11 tray"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lib]
+name = "cc_usage"
+path = "src/lib.rs"
+
+# Tray app and flyout.
+[[bin]]
+name = "cc-usage"
+path = "src/main.rs"
+
+# Developer tools. Examples, not [[bin]] targets: the Tauri bundler ships every
+# binary of the package, and these do not belong in the installer.
+#   cargo run -p cc-usage --example probe        the data path without WebView2
+[[example]]
+name = "probe"
+path = "examples/probe.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+cc-core.workspace = true
+cc-local.workspace = true
+cc-focus.workspace = true
+cc-envelope.workspace = true
+cc-remote.workspace = true
+# The Publisher role (src/publisher.rs) runs cc-publish's own pipeline.
+cc-publish.workspace = true
+# StreamExt/FutureExt for the KV watch in src/remote/task.rs.
+futures-util.workspace = true
+
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-plugin-notification = "2"
+# The user-defined show/hide shortcut. Registered from Rust only, so the
+# frontend needs no permission for it. Held below 2.4, which requires tauri
+# 2.12 and would drag tauri-build 2.7 in (static VC runtime: its empty
+# msvcrt.lib breaks linking the workspace doctests).
+tauri-plugin-global-shortcut = "~2.3.2"
+# The Save and Open dialogs of Settings → Data (src/backup.rs), called from
+# Rust only, so the frontend needs no permission for them. Held below 2.8,
+# which requires tauri 2.12 (see the global shortcut above).
+tauri-plugin-dialog = "~2.7.3"
+# Not used directly: holds the dialog plugin's own dependency below 2.6,
+# which requires tauri 2.12 too.
+tauri-plugin-fs = "~2.5.2"
+# `ResizeDirection` for `start_resize_dragging` lives here and tauri does not
+# re-export it. It is already in tauri's dependency tree.
+tauri-runtime = "2"
+
+serde.workspace = true
+serde_json.workspace = true
+chrono = { version = "0.4", features = ["serde"] }
+
+# The optional keys and credentials of a backup (src/backup.rs): Argon2id
+# turns the password into a key, XChaCha20-Poly1305 seals them, the same
+# cipher as the remote envelope.
+argon2 = { version = "0.5", default-features = false, features = ["alloc", "zeroize"] }
+chacha20poly1305 = { version = "0.11", default-features = false, features = ["alloc"] }
+base64.workspace = true
+getrandom.workspace = true
+zeroize.workspace = true
+
+# HTTP to api.anthropic.com. native-tls uses schannel, the TLS stack Windows
+# already ships: it avoids NASM and a C compiler, which rustls would require.
+reqwest = { version = "0.12", default-features = false, features = [
+  "json",
+  "native-tls",
+] }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time", "sync"] }
+# Diagnostics: both roles log through cc-publish's logger (src/main.rs) to
+# `cc-usage.log` in the data folder.
+tracing.workspace = true
+
+# SHQueryUserNotificationState, for hiding while a game or a presentation runs
+# full screen (src/fullscreen.rs); ShellExecuteW, to open a link in the
+# default browser (open_url in src/links.rs); the named mutex and event that
+# keep one app per data folder (src/instance.rs).
+[target.'cfg(windows)'.dependencies]
+windows-sys = { workspace = true, features = [
+  "Win32_Foundation",
+  "Win32_Security",
+  "Win32_System_Com",
+  "Win32_System_Threading",
+  "Win32_UI_Shell",
+  "Win32_UI_WindowsAndMessaging",
+] }
+# "Start with Windows" (src/autostart.rs): the app's own value under the Run
+# key, written quoted. Replaces tauri-plugin-autostart, whose auto-launch
+# crate wrote the path unquoted. Already in the tree (embed-resource).
+winreg = "0.55"
+
+[dev-dependencies]
+tempfile.workspace = true

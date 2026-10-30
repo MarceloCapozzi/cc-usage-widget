@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>cc-usage</title>
+    <link rel="stylesheet" href="styles/widget.css" />
+    <!-- The saved theme, before the first paint: a classic script, because
+         the modules below are deferred. -->
+    <script src="scripts/theme-init.js"></script>
+  </head>
+  <body>
+    <!-- The ".flyout" block of the "The panel" mockup in the design document
+         (docs/reference/flyout-mockup.html): same structure and class names,
+         filled by the ES modules in scripts/ (entry scripts/main.js). The usage view (account, history chart,
+         per-project report) and the ⚙ settings view replace the session list
+         in place. -->
+    <div class="flyout" id="flyout">
+      <div class="flyout-head" id="flyout-head">
+        <span class="head-left">
+          <!-- Shown in the usage and settings views: back to the sessions. -->
+          <button type="button" id="btn-back" title="Back to the sessions (Esc)" aria-label="Back to the sessions" hidden><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6" /></svg></button>
+          <span id="head-summary" aria-live="polite">Sessions</span>
+        </span>
+        <span class="icons">
+          <button type="button" id="btn-clear" title="Clear the list: live sessions come back on the next update" aria-label="Clear the session list"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 3h4M6 7l1 13h10l1-13M10 11v6M14 11v6" /></svg></button>
+          <button type="button" id="btn-usage" title="Usage: account, history and projects" aria-label="Usage: account, history and projects" aria-pressed="false"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V4" /><path d="M4 20h16" /><path d="M8 16v-4M12 16V8M16 16v-6" /></svg></button>
+          <button type="button" id="btn-settings" title="Settings" aria-label="Settings" aria-pressed="false"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></svg></button>
+          <button type="button" id="btn-refresh" title="Refresh now" aria-label="Refresh now"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /></svg></button>
+          <button type="button" id="btn-hide" title="Hide the widget (show it again from the tray icon or the shortcut; quit from the tray menu)" aria-label="Hide the widget"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10" /><path d="M18.4 6.6a9 9 0 1 1-12.77.04" /></svg></button>
+        </span>
+      </div>
+
+      <!-- Main view: the sessions, most urgent first (order from the backend). -->
+      <div class="view" id="view-sessions" aria-label="Claude Code sessions">
+        <!-- Publisher keys waiting for consent (scripts/keys.js): a new
+             machine, or a known one with a new key. Accept or Reject. -->
+        <div class="key-notice" id="key-notice" role="region" aria-label="Publisher keys to review" aria-live="polite" hidden></div>
+        <div id="session-list">
+          <div class="sessions-empty">Looking for sessions…</div>
+        </div>
+      </div>
+
+      <!-- Usage view: what is consumed, not how the widget behaves. -->
+      <div class="view view-history" id="view-usage" hidden>
+        <h2 class="section-title">Account</h2>
+        <div class="account">
+          <span id="account-text">Not signed in</span>
+          <!-- A stroke globe, drawn like the header's glyph buttons. -->
+          <button type="button" class="icon-btn" id="btn-web" title="Open the usage page on claude.ai" aria-label="Open the usage page on claude.ai">
+            <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M3 12h18" />
+              <path d="M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- One chart at a time: the title is the switch. Activity (tokens
+             per day) by default; Usage history draws the plan limits. -->
+        <h2 class="section-title chart-switch" role="tablist" aria-label="Chart">
+          <button type="button" role="tab" data-chart="activity" aria-selected="true">Activity</button>
+          <span class="chart-switch-sep" aria-hidden="true">·</span>
+          <button type="button" role="tab" data-chart="history" aria-selected="false">Usage history</button>
+        </h2>
+        <!-- Tokens per day, every model, project and machine, six months:
+             filled by drawActivity with the project list. -->
+        <div class="activity" id="activity">
+          <p class="empty">Reading transcripts…</p>
+        </div>
+
+        <div id="history" hidden>
+          <div class="ranges" role="group" aria-label="Chart range">
+            <button type="button" data-range="1h">1h</button>
+            <button type="button" data-range="6h" aria-pressed="true">6h</button>
+            <button type="button" data-range="1d">1d</button>
+            <button type="button" data-range="7d">7d</button>
+            <button type="button" data-range="30d">30d</button>
+          </div>
+          <div class="chart">
+            <svg id="svg" viewBox="0 0 324 130" role="img" aria-labelledby="chart-title">
+              <title id="chart-title">Usage history</title>
+            </svg>
+            <div class="tooltip" id="tooltip"></div>
+          </div>
+          <div class="legend" id="legend"></div>
+        </div>
+
+        <div id="live-section">
+          <h2 class="section-title">Context window</h2>
+          <div class="blocks" id="live-blocks"></div>
+          <div id="notices"></div>
+        </div>
+
+        <h2 class="section-title">Usage by project</h2>
+        <div class="blocks" id="projects">
+          <p class="empty">Reading transcripts…</p>
+        </div>
+      </div>
+
+      <!-- Settings view: the widget's own preferences (settings.json in the
+           app config dir). The shortcut field captures a key press rather
+           than taking typed text; while it has the focus the global shortcut
+           is let go, so the current combination can be pressed there too. -->
+      <div class="view view-history" id="view-settings" hidden>
+        <h2 class="section-title">Settings</h2>
+        <!-- Diagnostics (scripts/connection.js): folder overrides the app
+             ignored, such as a relative CC_USAGE_DATA_DIR. -->
+        <div class="setting-problems" id="path-problems" role="status" hidden></div>
+        <div class="setting">
+          <label class="setting-label" for="shortcut-field">Shortcut</label>
+          <input type="text" class="shortcut-field" id="shortcut-field" readonly spellcheck="false" autocomplete="off" placeholder="Click, then press keys" aria-describedby="shortcut-help" />
+          <button type="button" class="chip" id="shortcut-save" disabled>Save</button>
+          <button type="button" class="chip" id="shortcut-clear">Clear</button>
+        </div>
+        <p class="setting-note" id="shortcut-note" role="status" hidden></p>
+        <p class="setting-help" id="shortcut-help">Shows or hides the widget from anywhere. Ctrl, Alt, Shift or Win plus one key, or F1 to F24 alone.</p>
+        <!-- The tag on this machine's rows, where remote rows show their
+             publisher's alias. Same rules as an alias; blank or Reset goes
+             back to the computer name. -->
+        <label class="setting-label setting-label-block" for="machine-field">This machine's name</label>
+        <div class="setting">
+          <input type="text" class="text-field" id="machine-field" maxlength="64" spellcheck="false" autocomplete="off" aria-describedby="machine-help" />
+          <button type="button" class="chip" id="machine-save" disabled>Save</button>
+          <button type="button" class="chip" id="machine-reset">Reset to default</button>
+        </div>
+        <p class="setting-note" id="machine-note" role="status" hidden></p>
+        <p class="setting-help" id="machine-help">The tag on this machine's sessions. Lowercase letters, digits and dashes, up to 31.</p>
+        <label class="setting setting-check">
+          <input type="checkbox" id="start-with-windows" />
+          <span>Start with Windows</span>
+        </label>
+        <p class="setting-note" id="autostart-note" role="status" hidden></p>
+        <div class="setting setting-select">
+          <label class="setting-label" for="theme-select">Theme</label>
+          <select id="theme-select">
+            <option value="system">System</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </div>
+        <div class="setting setting-select">
+          <label class="setting-label" for="refresh-every">Refresh usage every</label>
+          <select id="refresh-every">
+            <option value="2">2 min</option>
+            <option value="5">5 min</option>
+            <option value="10">10 min</option>
+            <option value="15">15 min</option>
+            <option value="30">30 min</option>
+          </select>
+        </div>
+        <!-- Clean-up of the session list. Hiding idle rows is a view filter
+             (they are alive and come back when their state changes);
+             offline remote rows are removed for good. -->
+        <div class="setting setting-select">
+          <label class="setting-label" for="hide-idle">Hide idle sessions after</label>
+          <select id="hide-idle">
+            <option value="0">Never</option>
+            <option value="15">15 min</option>
+            <option value="30">30 min</option>
+            <option value="60">1 h</option>
+            <option value="240">4 h</option>
+          </select>
+        </div>
+        <div class="setting setting-select">
+          <label class="setting-label" for="remove-offline">Remove offline sessions after</label>
+          <select id="remove-offline">
+            <option value="0">Never</option>
+            <option value="5">5 min</option>
+            <option value="10">10 min</option>
+            <option value="30">30 min</option>
+            <option value="60">60 min</option>
+          </select>
+        </div>
+        <!-- Full-screen hiding, three levels. -->
+        <fieldset class="setting-group">
+          <legend class="setting-label">When something is full screen</legend>
+          <label class="setting setting-check">
+            <input type="radio" name="fullscreen" value="never" />
+            <span>Never hide</span>
+          </label>
+          <label class="setting setting-check">
+            <input type="radio" name="fullscreen" value="gamesAndPresentations" />
+            <span>Hide for games and presentations</span>
+          </label>
+          <label class="setting setting-check">
+            <input type="radio" name="fullscreen" value="always" />
+            <span>Hide for anything full screen</span>
+          </label>
+        </fieldset>
+        <!-- Why a save of the settings above (theme, refresh, clean-up,
+             full screen) failed; the shortcut and the name have their own. -->
+        <p class="setting-note" id="settings-note" role="status" hidden></p>
+
+        <!-- Role: one machine is the viewer; a machine with the app that must
+             publish its own sessions is a Publisher (src/publisher.rs).
+             Switching restarts the app, after a confirmation. In the
+             Publisher role the readiness list and the setup buttons show;
+             the dialogs are native, opened by the backend. -->
+        <h2 class="section-title">Role</h2>
+        <div class="setting setting-select">
+          <label class="setting-label" for="role-select">Role</label>
+          <select id="role-select" aria-describedby="role-help">
+            <option value="viewer">Viewer</option>
+            <option value="publisher">Publisher</option>
+          </select>
+        </div>
+        <p class="setting-help" id="role-help">Viewer shows the other machines' sessions from the bucket. Publisher sends this machine's sessions to the viewer on another PC. Only one machine is the viewer.</p>
+        <div class="data-restore" id="role-confirm" hidden>
+          <p class="data-summary" id="role-confirm-text">cc-usage restarts to switch role.</p>
+          <div class="setting data-actions">
+            <button type="button" class="chip" id="role-switch">Switch and restart</button>
+            <button type="button" class="chip" id="role-cancel">Cancel</button>
+          </div>
+        </div>
+        <p class="setting-note" id="role-note" role="status" hidden></p>
+        <div class="publisher-panel" id="publisher-panel" hidden>
+          <p class="setting-help">Publishes as <strong class="publisher-alias" id="publisher-alias"></strong>, this machine's name.</p>
+          <ul class="publisher-checks" id="publisher-checks"></ul>
+          <div class="setting publisher-key" id="publisher-key" hidden>
+            <input type="text" class="text-field" id="publisher-key-line" readonly spellcheck="false" aria-label="This machine's public key" />
+            <button type="button" class="chip" id="publisher-key-copy">Copy</button>
+          </div>
+          <div class="setting data-actions">
+            <button type="button" class="chip" id="publisher-generate">Generate key</button>
+            <button type="button" class="chip" id="publisher-import-viewer">Import viewer key…</button>
+            <button type="button" class="chip" id="publisher-import-creds">Import creds…</button>
+          </div>
+          <!-- "Replace key…" (when the machine has its key): replacing it
+               changes the machine's identity, so the alias is typed back. -->
+          <div class="data-restore" id="publisher-replace" hidden>
+            <p class="data-summary" id="publisher-replace-text"></p>
+            <input type="text" class="text-field" id="publisher-replace-confirm" spellcheck="false" autocomplete="off" aria-label="Type this machine's name to confirm" />
+            <div class="setting data-actions">
+              <button type="button" class="chip" id="publisher-replace-run" disabled>Replace key</button>
+              <button type="button" class="chip" id="publisher-replace-cancel">Cancel</button>
+            </div>
+          </div>
+          <p class="setting-note" id="publisher-note" role="status" hidden></p>
+          <div class="setting data-actions" id="publisher-restart-row" hidden>
+            <button type="button" class="chip" id="publisher-restart">Restart cc-usage</button>
+          </div>
+        </div>
+
+        <!-- Remote connection: the NATS servers and bucket both roles use
+             (settings.json "nats", src/settings.rs; scripts/connection.js).
+             Blank is the default, shown as the placeholder. A
+             CC_USAGE_NATS_* variable wins: its field is read-only and a line
+             names it. Save is checked with cc-remote's rules. -->
+        <h2 class="section-title">Remote connection</h2>
+        <p class="setting-help data-help">Where the viewer reads and the Publisher role writes. Leave a field blank for its default.</p>
+        <label class="setting-label setting-label-block" for="nats-servers">Servers</label>
+        <textarea class="text-field nats-field nats-servers" id="nats-servers" rows="2" spellcheck="false" autocomplete="off" aria-describedby="nats-servers-help nats-servers-env"></textarea>
+        <p class="setting-help" id="nats-servers-env" hidden></p>
+        <p class="setting-help" id="nats-servers-help">One URL per line, tried in order: tls:// or wss://, a host and an optional port. Ctrl+Enter saves.</p>
+        <label class="setting-label setting-label-block" for="nats-bucket">Bucket</label>
+        <div class="setting">
+          <input type="text" class="text-field nats-field" id="nats-bucket" maxlength="64" spellcheck="false" autocomplete="off" aria-describedby="nats-bucket-help nats-bucket-env" />
+        </div>
+        <p class="setting-help" id="nats-bucket-env" hidden></p>
+        <p class="setting-help" id="nats-bucket-help">Letters, digits, - or _, up to 64. Every machine uses the viewer's bucket.</p>
+        <div class="setting data-actions">
+          <button type="button" class="chip" id="nats-save" disabled>Save</button>
+          <button type="button" class="chip" id="nats-reset" disabled>Reset to defaults</button>
+        </div>
+        <p class="setting-note" id="nats-note" role="status" hidden></p>
+        <!-- Values set but not usable: each falls back to its default. -->
+        <div class="setting-problems" id="nats-problems" role="status" hidden></div>
+        <!-- Publisher role: it connects with the settings it started with. -->
+        <div id="nats-restart" hidden>
+          <p class="setting-help">Publishing switches to these settings after a restart.</p>
+          <div class="setting data-actions">
+            <button type="button" class="chip" id="nats-restart-run">Restart cc-usage</button>
+          </div>
+        </div>
+
+        <!-- Backup and restore of what only this machine keeps. The dialogs
+             are native, opened by the backend; a restore adds, never
+             replaces (src/backup.rs). -->
+        <h2 class="section-title">Data</h2>
+        <p class="setting-help data-help">History, activity and other machines' projects live only on this machine. A backup keeps them; Restore adds a backup to what is here.</p>
+        <label class="setting setting-check">
+          <input type="checkbox" id="backup-secrets" />
+          <span>Include keys and credentials (to move the viewer to another PC)</span>
+        </label>
+        <div class="data-passwords" id="backup-passwords" hidden>
+          <input type="password" class="text-field" id="backup-password" autocomplete="new-password" placeholder="Password (8+ characters)" aria-label="Backup password" />
+          <input type="password" class="text-field" id="backup-confirm" autocomplete="new-password" placeholder="Confirm password" aria-label="Confirm backup password" />
+        </div>
+        <div class="setting data-actions">
+          <button type="button" class="chip" id="backup-run">Back up…</button>
+          <button type="button" class="chip" id="restore-pick">Restore…</button>
+        </div>
+        <p class="setting-note" id="backup-note" role="status" hidden></p>
+        <div class="data-restore" id="restore-panel" hidden>
+          <p class="data-summary" id="restore-summary"></p>
+          <input type="password" class="text-field" id="restore-password" autocomplete="off" placeholder="Backup password (blank: data only)" aria-label="Backup password" hidden />
+          <div class="setting data-actions">
+            <button type="button" class="chip" id="restore-run">Restore</button>
+            <button type="button" class="chip" id="restore-cancel">Cancel</button>
+          </div>
+        </div>
+        <p class="setting-note" id="restore-note" role="status" hidden></p>
+        <!-- The version, from Cargo.toml (the one place it is defined). -->
+        <p class="setting-about" id="app-version">cc-usage</p>
+      </div>
+
+      <!-- Plan usage, one line per limit, plus errors and the remote state. -->
+      <div class="flyout-foot" id="flyout-foot">
+        <div><span>Plan usage</span><strong>loading…</strong></div>
+      </div>
+    </div>
+
+    <!-- Resize grips along the panel's edges. Windows only offers a 4 px native frame on an undecorated
+         window, which is impossible to hit; these give a few pixels more
+         inside the panel's edge, and more at the corners. -->
+    <div class="grip grip-n" data-dir="n"></div>
+    <div class="grip grip-s" data-dir="s"></div>
+    <div class="grip grip-w" data-dir="w"></div>
+    <div class="grip grip-e" data-dir="e"></div>
+    <div class="grip grip-nw" data-dir="nw"></div>
+    <div class="grip grip-ne" data-dir="ne"></div>
+    <div class="grip grip-sw" data-dir="sw"></div>
+    <div class="grip grip-se" data-dir="se"></div>
+
+    <script type="module" src="scripts/main.js"></script>
+  </body>
+</html>

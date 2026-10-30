@@ -1,0 +1,38 @@
+{
+  "_README": [
+    "OPTIONAL overrides for the per-project cost report.",
+    "",
+    "cc-usage ships Anthropic's first-party API list prices (see BUILTIN_PRICES in",
+    "app/src/projects.rs, dated BUILTIN_PRICES_AS_OF). You only need this file to",
+    "override an entry (newer prices, another provider's rate card) or to add a",
+    "model the built-in table does not know.",
+    "",
+    "To use it, copy it to pricing.json in the data folder (%LOCALAPPDATA%\\cc-usage,",
+    "or CC_USAGE_DATA_DIR) and keep only the models you want to override; an",
+    "entry here replaces the built-in one for that model. The zeros below are",
+    "placeholders, not prices.",
+    "",
+    "Unit: dollars per million tokens. cache_write and cache_read are optional;",
+    "when omitted, the input price is used as an approximation (never zero).",
+    "Model names must match the transcripts; a dated id such as",
+    "claude-haiku-4-5-20251001 also matches an entry named claude-haiku-4-5."
+  ],
+  "claude-opus-5": {
+    "input": 0,
+    "output": 0,
+    "cache_write": 0,
+    "cache_read": 0
+  },
+  "claude-sonnet-5": {
+    "input": 0,
+    "output": 0,
+    "cache_write": 0,
+    "cache_read": 0
+  },
+  "claude-haiku-4-5-20251001": {
+    "input": 0,
+    "output": 0,
+    "cache_write": 0,
+    "cache_read": 0
+  }
+}

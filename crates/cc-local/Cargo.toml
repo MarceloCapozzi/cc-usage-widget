@@ -1,0 +1,24 @@
+[package]
+name = "cc-local"
+description = "Local session sources: claude agents --json, the session registry, transcripts, the spool, status line files, and the session monitor built on them"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+cc-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+memchr = "2"
+# Transcript timestamps (RFC 3339) and the window cut-off of `projects`.
+chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
+
+[target.'cfg(windows)'.dependencies]
+# OpenProcess / GetExitCodeProcess / GetProcessTimes for `process`.
+windows-sys = { workspace = true, features = ["Win32_Foundation", "Win32_System_Threading"] }
+
+[dev-dependencies]
+tempfile.workspace = true
