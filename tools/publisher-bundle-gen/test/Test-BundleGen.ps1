@@ -193,7 +193,10 @@ try {
         Assert ($missing.Count -eq 0) "$($tar.Name): every entry is listed under $top, long paths whole ($($missing -join ', '))"
         $out = Join-Path $root "extract $($tar.Name)"
         New-Item -ItemType Directory -Force -Path $out | Out-Null
-        $r = Invoke-Tar $tar @("-x${z}f", $file, '-C', $out)
+        # Extract from inside the folder, not with -C: GNU tar on the CI runner
+        # cannot open a -C folder given as a Windows path.
+        Push-Location -LiteralPath $out
+        try { $r = Invoke-Tar $tar @("-x${z}f", $file) } finally { Pop-Location }
         Assert ($r.Code -eq 0) "$($tar.Name) extracts the archive (exit $($r.Code)) $($r.Lines -join ' ')"
         $diff = @()
         foreach ($rel in $files.Keys) {

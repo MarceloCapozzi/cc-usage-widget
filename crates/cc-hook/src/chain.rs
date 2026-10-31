@@ -129,10 +129,14 @@ mod tests {
 
     #[test]
     fn keys_ignore_separators_dots_and_case_on_windows() {
-        let a = settings_key(Path::new(r"C:\Users\Me\.claude\settings.json"));
-        let b = settings_key(Path::new(r"\\?\C:\Users\Me\.claude\.\settings.json"));
-        assert_eq!(a, b);
+        assert_eq!(
+            settings_key(Path::new("/home/me/.claude/./settings.json")),
+            settings_key(Path::new("/home/me/.claude/settings.json"))
+        );
         if cfg!(windows) {
+            let a = settings_key(Path::new(r"C:\Users\Me\.claude\settings.json"));
+            let b = settings_key(Path::new(r"\\?\C:\Users\Me\.claude\.\settings.json"));
+            assert_eq!(a, b);
             assert_eq!(a, "c:/users/me/.claude/settings.json");
             assert_eq!(
                 a,
